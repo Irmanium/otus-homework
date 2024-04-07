@@ -14,4 +14,10 @@ const (
 		SELECT password_hash
 			FROM user_profile
 			WHERE id = $1;`
+
+	searchUserQuery = `
+		SELECT id, first_name, second_name, birthdate, biography, city
+			FROM user_profile
+			WHERE first_name LIKE $1 || '%' AND second_name LIKE $2 || '%'
+			ORDER BY id;`
 )

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"otus-homework/internal/migrate"
 	"otus-homework/internal/repository"
 	"otus-homework/internal/service"
@@ -19,17 +19,12 @@ const (
 func main() {
 	migrate.Up(dbString)
 
-	conn, err := pgx.Connect(context.Background(), dbString)
+	pool, err := pgxpool.New(context.Background(), dbString)
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		err = conn.Close(context.Background())
-		if err != nil {
-			panic(err)
-		}
-	}()
-	repo := repository.New(conn)
+	defer pool.Close()
+	repo := repository.New(pool)
 
 	s := service.New(repo, port, jwtSecret, tokenTTLHours)
 	s.StartService()

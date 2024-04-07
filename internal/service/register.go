@@ -41,8 +41,8 @@ func (s *Service) register(c echo.Context) error {
 	id := uuid.New().String()
 
 	err = s.r.Register(c.Request().Context(), domain.FullUser{
-		ID: id,
 		UserProfile: domain.UserProfile{
+			ID:         id,
 			FirstName:  req.FirstName,
 			SecondName: req.SecondName,
 			Birthdate:  birthdate,

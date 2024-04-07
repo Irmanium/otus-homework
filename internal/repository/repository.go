@@ -5,15 +5,16 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"otus-homework/internal/domain"
 )
 
 type Repo struct {
-	*pgx.Conn
+	*pgxpool.Pool
 }
 
-func New(conn *pgx.Conn) *Repo {
-	return &Repo{Conn: conn}
+func New(conn *pgxpool.Pool) *Repo {
+	return &Repo{Pool: conn}
 }
 
 func (r *Repo) Register(ctx context.Context, user domain.FullUser) error {
@@ -30,6 +31,7 @@ func (r *Repo) GetUser(ctx context.Context, id string) (domain.UserProfile, erro
 		return domain.UserProfile{}, domain.ErrNotFound
 	}
 
+	user.ID = id
 	return user, err
 }
 
@@ -43,4 +45,24 @@ func (r *Repo) GetPassword(ctx context.Context, id string) (string, error) {
 	}
 
 	return passwordHash, err
+}
+
+func (r *Repo) SearchUser(ctx context.Context, firstName, secondName string) ([]domain.UserProfile, error) {
+	rows, err := r.Query(ctx, searchUserQuery, firstName, secondName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []domain.UserProfile
+	for rows.Next() {
+		var user domain.UserProfile
+		err = rows.Scan(&user.ID, &user.FirstName, &user.SecondName, &user.Birthdate, &user.Biography, &user.City)
+		users = append(users, user)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
@@ -13,6 +14,7 @@ type Repo interface {
 	Register(ctx context.Context, user domain.FullUser) error
 	GetUser(ctx context.Context, id string) (domain.UserProfile, error)
 	GetPassword(ctx context.Context, id string) (string, error)
+	SearchUser(ctx context.Context, firstName, secondName string) ([]domain.UserProfile, error)
 }
 
 type Service struct {
@@ -50,6 +52,18 @@ func (s *Service) StartService() {
 	r := s.Group("")
 	r.Use(echojwt.WithConfig(s.getJWTConfig()))
 	r.GET("/user/get/:id", s.getUser)
+	r.GET("/user/search", s.searchUser)
 
 	s.Logger.Fatal(s.Start(":" + s.port))
+}
+
+func convertDomainProfileToResp(user domain.UserProfile) GetUserResp {
+	return GetUserResp{
+		ID:         user.ID,
+		FirstName:  user.FirstName,
+		SecondName: user.SecondName,
+		Birthdate:  user.Birthdate.Format(time.DateOnly),
+		Biography:  user.Biography,
+		City:       user.City,
+	}
 }

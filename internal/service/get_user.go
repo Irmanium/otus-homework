@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -36,12 +35,5 @@ func (s *Service) getUser(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, GetUserResp{
-		ID:         id,
-		FirstName:  user.FirstName,
-		SecondName: user.SecondName,
-		Birthdate:  user.Birthdate.Format(time.DateOnly),
-		Biography:  user.Biography,
-		City:       user.City,
-	})
+	return c.JSON(http.StatusOK, convertDomainProfileToResp(user))
 }
