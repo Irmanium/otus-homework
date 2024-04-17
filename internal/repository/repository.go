@@ -11,10 +11,11 @@ import (
 
 type Repo struct {
 	*pgxpool.Pool
+	slave *pgxpool.Pool
 }
 
-func New(conn *pgxpool.Pool) *Repo {
-	return &Repo{Pool: conn}
+func New(conn *pgxpool.Pool, slaveConn *pgxpool.Pool) *Repo {
+	return &Repo{Pool: conn, slave: slaveConn}
 }
 
 func (r *Repo) Register(ctx context.Context, user domain.FullUser) error {
@@ -23,7 +24,7 @@ func (r *Repo) Register(ctx context.Context, user domain.FullUser) error {
 }
 
 func (r *Repo) GetUser(ctx context.Context, id string) (domain.UserProfile, error) {
-	row := r.QueryRow(ctx, getUserQuery, id)
+	row := r.slave.QueryRow(ctx, getUserQuery, id)
 
 	var user domain.UserProfile
 	err := row.Scan(&user.FirstName, &user.SecondName, &user.Birthdate, &user.Biography, &user.City)
@@ -36,7 +37,7 @@ func (r *Repo) GetUser(ctx context.Context, id string) (domain.UserProfile, erro
 }
 
 func (r *Repo) GetPassword(ctx context.Context, id string) (string, error) {
-	row := r.QueryRow(ctx, getPasswordQuery, id)
+	row := r.slave.QueryRow(ctx, getPasswordQuery, id)
 
 	var passwordHash string
 	err := row.Scan(&passwordHash)
@@ -48,7 +49,7 @@ func (r *Repo) GetPassword(ctx context.Context, id string) (string, error) {
 }
 
 func (r *Repo) SearchUser(ctx context.Context, firstName, secondName string) ([]domain.UserProfile, error) {
-	rows, err := r.Query(ctx, searchUserQuery, firstName, secondName)
+	rows, err := r.slave.Query(ctx, searchUserQuery, firstName, secondName)
 	if err != nil {
 		return nil, err
 	}
@@ -66,3 +67,4 @@ func (r *Repo) SearchUser(ctx context.Context, firstName, secondName string) ([]
 
 	return users, nil
 }
+
