@@ -11,6 +11,7 @@ import (
 
 const (
 	dbString      = "host=db user=postgres password=postgres dbname=postgres sslmode=disable"
+	dbSlaveString = "host=db-slave-one user=postgres password=postgres dbname=postgres sslmode=disable"
 	port          = "8080"
 	jwtSecret     = "secret"
 	tokenTTLHours = 72
@@ -24,8 +25,14 @@ func main() {
 		panic(err)
 	}
 	defer pool.Close()
-	repo := repository.New(pool)
+	slavePool, err := pgxpool.New(context.Background(), dbSlaveString)
+	if err != nil {
+		panic(err)
+	}
+	defer pool.Close()
+	repo := repository.New(pool, slavePool)
 
 	s := service.New(repo, port, jwtSecret, tokenTTLHours)
 	s.StartService()
 }
+
