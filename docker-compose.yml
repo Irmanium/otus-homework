@@ -24,6 +24,18 @@ services:
       - POSTGRES_DB=postgres
     networks:
       - backend
+  db-slave-one:
+    container_name: "db-slave-one"
+    image: postgres
+    restart: unless-stopped
+    ports:
+      - '5433:5432'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    networks:
+      - backend
 
 networks:
   backend:
