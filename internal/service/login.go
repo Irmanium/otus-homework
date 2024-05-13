@@ -29,7 +29,7 @@ func (s *Service) login(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, ErrResp{Message: "invalid id"})
 	}
 
-	passwordHash, err := s.r.GetPassword(c.Request().Context(), req.ID)
+	passwordHash, err := s.userRepo.GetPassword(c.Request().Context(), req.ID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			return c.JSON(http.StatusNotFound, ErrResp{Message: "user not found"})

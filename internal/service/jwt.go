@@ -22,6 +22,10 @@ func (s *Service) getJWTConfig() echojwt.Config {
 	}
 }
 
+func (s *Service) getUserIDFromJWT(c echo.Context) string {
+	return c.Get("user").(*jwt.Token).Claims.(*jwtCustomClaims).UserID
+}
+
 func (s *Service) generateToken(id string) (string, error) {
 	claims := &jwtCustomClaims{
 		UserID: id,

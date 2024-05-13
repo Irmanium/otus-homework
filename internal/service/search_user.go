@@ -12,7 +12,7 @@ func (s *Service) searchUser(c echo.Context) error {
 	firstName := c.QueryParam("first_name")
 	secondName := c.QueryParam("second_name")
 
-	users, err := s.r.SearchUser(c.Request().Context(), firstName, secondName)
+	users, err := s.userRepo.SearchUser(c.Request().Context(), firstName, secondName)
 	if err != nil {
 		return err
 	}

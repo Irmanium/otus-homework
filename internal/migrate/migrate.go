@@ -5,7 +5,7 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
-func Up(dbString string) {
+func Up(dbString, migrationDir string) {
 	db, err := goose.OpenDBWithDriver("postgres", dbString)
 	if err != nil {
 		panic(err)
@@ -17,7 +17,7 @@ func Up(dbString string) {
 		}
 	}()
 
-	if err = goose.Up(db, "migrations"); err != nil {
+	if err = goose.Up(db, migrationDir); err != nil {
 		panic(err)
 	}
 }

@@ -26,7 +26,7 @@ func (s *Service) getUser(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, ErrResp{Message: "invalid id"})
 	}
 
-	user, err := s.r.GetUser(c.Request().Context(), id)
+	user, err := s.userRepo.GetUser(c.Request().Context(), id)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			return c.JSON(http.StatusNotFound, ErrResp{Message: "user not found"})
