@@ -10,7 +10,7 @@ services:
       - "8080:8080"
     depends_on:
       - db
-      - citus-worker
+      - tarantool
     networks:
       - backend
   db:
@@ -37,42 +37,16 @@ services:
       - POSTGRES_DB=postgres
     networks:
       - backend
-  citus-master:
-    container_name: "citus-master"
-    image: "citusdata/citus:12.1.3"
+  tarantool:
+    container_name: "tarantool"
+    image: tarantool/tarantool:latest
+    networks:
+      - backend
     ports:
-      - '5434:5432'
-    labels: ["com.citusdata.role=Master"]
-    environment: &CITUS_AUTH
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgres"
-      PGUSER: "postgres"
-      PGPASSWORD: "postgres"
-      POSTGRES_HOST_AUTH_METHOD: "trust"
-      CITUS_HOST: "citus-master"
-    networks:
-      - backend
-  citus-worker:
-    image: "citusdata/citus:12.1.3"
-    labels: ["com.citusdata.role=Worker"]
-    depends_on: [ citus-manager ]
-    environment: *CITUS_AUTH
-    command: "/wait-for-manager.sh"
-    volumes:
-      - healthcheck-volume:/healthcheck
-    networks:
-      - backend
-  citus-manager:
-    container_name: "citus-manager"
-    image: "citusdata/membership-manager:0.3.0"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
-      - healthcheck-volume:/healthcheck
-    depends_on: [ citus-master ]
-    environment: *CITUS_AUTH
-    networks:
-      - backend
+      - "3301:3301"
+
 volumes:
   healthcheck-volume:
 networks:
   backend:
+
