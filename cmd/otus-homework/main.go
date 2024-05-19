@@ -2,21 +2,22 @@ package main
 
 import (
 	"context"
+	"otus-homework/internal/tarantoolrepo"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/tarantool/go-tarantool/v2"
 	"otus-homework/internal/migrate"
 	"otus-homework/internal/repo"
 	"otus-homework/internal/service"
-	"otus-homework/internal/shardedrepo"
 )
 
 const (
+	tarantoolAddress = "tarantool:3301"
+
 	dbString      = "host=db user=postgres password=postgres dbname=postgres sslmode=disable"
 	dbSlaveString = "host=db user=postgres password=postgres dbname=postgres sslmode=disable"
-	dbCitusString = "host=citus-master user=postgres password=postgres dbname=postgres sslmode=disable"
 
-	repoMigrationsDir        = "migrations/repo"
-	shardedRepoMigrationsDir = "migrations/sharded-repo"
+	repoMigrationsDir = "migrations/repo"
 
 	port          = "8080"
 	jwtSecret     = "secret"
@@ -24,9 +25,18 @@ const (
 )
 
 func main() {
-	migrate.Up(dbString, repoMigrationsDir)
-	migrate.Up(dbCitusString, shardedRepoMigrationsDir)
+	tarantoolConn, err := tarantool.Connect(context.Background(), tarantool.NetDialer{
+		Address: tarantoolAddress,
+	}, tarantool.Opts{})
+	if err != nil {
+		panic(err)
+	}
+	tarantoolRepo, err := tarantoolrepo.NewAndMigrate(tarantoolConn)
+	if err != nil {
+		panic(err)
+	}
 
+	migrate.Up(dbString, repoMigrationsDir)
 	pool, err := pgxpool.New(context.Background(), dbString)
 	if err != nil {
 		panic(err)
@@ -39,12 +49,6 @@ func main() {
 	defer pool.Close()
 	mainRepo := repo.New(pool, slavePool)
 
-	shardedPool, err := pgxpool.New(context.Background(), dbCitusString)
-	if err != nil {
-		panic(err)
-	}
-	shardedRepo := shardedrepo.New(shardedPool)
-
-	s := service.New(mainRepo, shardedRepo, port, jwtSecret, tokenTTLHours)
+	s := service.New(mainRepo, tarantoolRepo, port, jwtSecret, tokenTTLHours)
 	s.StartService()
 }
