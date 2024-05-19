@@ -1,11 +1,6 @@
-Запуск только Citus
-```bash
-$ docker-compose up --scale citus-worker=2 -d citus-manager citus-master citus-worker
-```
-
 Запуск
 ```bash
-$ docker-compose up --scale citus-worker=2 -d
+$ docker-compose up
 ```
 
 Стоп
@@ -17,4 +12,3 @@ $ docker-compose stop
 ```bash
 $ docker-compose up --build --no-deps app
 ```
-
