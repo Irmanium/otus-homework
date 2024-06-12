@@ -2,13 +2,15 @@ package main
 
 import (
 	"context"
-	"otus-homework/internal/tarantoolrepo"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"github.com/tarantool/go-tarantool/v2"
 	"otus-homework/internal/migrate"
+	"otus-homework/internal/redisrepo"
 	"otus-homework/internal/repo"
 	"otus-homework/internal/service"
+	"otus-homework/internal/tarantoolrepo"
 )
 
 const (
@@ -17,11 +19,14 @@ const (
 	dbString      = "host=db user=postgres password=postgres dbname=postgres sslmode=disable"
 	dbSlaveString = "host=db user=postgres password=postgres dbname=postgres sslmode=disable"
 
+	redisAddress = "redis:6379"
+
 	repoMigrationsDir = "migrations/repo"
 
 	port          = "8080"
 	jwtSecret     = "secret"
 	tokenTTLHours = 72
+	feedMaxLen    = 1000
 )
 
 func main() {
@@ -47,8 +52,13 @@ func main() {
 		panic(err)
 	}
 	defer pool.Close()
-	mainRepo := repo.New(pool, slavePool)
+	mainRepo := repo.New(pool, slavePool, feedMaxLen)
 
-	s := service.New(mainRepo, tarantoolRepo, port, jwtSecret, tokenTTLHours)
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: redisAddress,
+	})
+	redisRepo := redisrepo.New(redisClient)
+
+	s := service.New(mainRepo, tarantoolRepo, redisRepo, port, jwtSecret, tokenTTLHours, feedMaxLen)
 	s.StartService()
 }
