@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
+	"otus-homework/internal/domain"
+
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"otus-homework/internal/domain"
 )
 
 type UserRepo interface {
@@ -38,12 +39,18 @@ type FeedCache interface {
 	GetFeedFromCache(ctx context.Context, userID string) ([]domain.Post, error)
 }
 
+type LiveFeedRepo interface {
+	SendPost(ctx context.Context, post domain.Post) error
+	GetFeed(friendIDs []string, cancel <-chan struct{}) (<-chan []byte, error)
+}
+
 type Service struct {
 	*echo.Echo
 
-	userRepo   UserRepo
-	dialogRepo DialogRepo
-	feedCache  FeedCache
+	userRepo     UserRepo
+	dialogRepo   DialogRepo
+	feedCache    FeedCache
+	liveFeedRepo LiveFeedRepo
 
 	port          string
 	jwtSecret     string
@@ -56,7 +63,17 @@ type ErrResp struct {
 	Message string `json:"message"`
 }
 
-func New(userRepo UserRepo, dialogRepo DialogRepo, feedCache FeedCache, port, jwtSecret string, tokenTTLHours, feedCacheMaxLen int) *Service {
+func New(
+	userRepo UserRepo,
+	dialogRepo DialogRepo,
+	feedCache FeedCache,
+	liveFeedRepo LiveFeedRepo,
+	port string,
+	jwtSecret string,
+	tokenTTLHours int,
+	feedCacheMaxLen int,
+) *Service {
+
 	e := echo.New()
 
 	return &Service{
@@ -64,6 +81,7 @@ func New(userRepo UserRepo, dialogRepo DialogRepo, feedCache FeedCache, port, jw
 		userRepo:        userRepo,
 		dialogRepo:      dialogRepo,
 		feedCache:       feedCache,
+		liveFeedRepo:    liveFeedRepo,
 		port:            port,
 		jwtSecret:       jwtSecret,
 		tokenTTLHours:   tokenTTLHours,
@@ -94,8 +112,8 @@ func (s *Service) StartService() {
 	r.PUT("/post/update", s.updatePost)
 	r.PUT("/post/delete/:id", s.deletePost)
 	r.GET("/post/get/:id", s.getPost)
-
 	r.GET("/post/feed", s.getFeed)
+	r.GET("/post/feed/posted", s.postFeed) // ws
 
 	s.Logger.Fatal(s.Start(":" + s.port))
 }

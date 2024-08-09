@@ -4,9 +4,10 @@ import (
 	"context"
 	"net/http"
 
+	"otus-homework/internal/domain"
+
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"otus-homework/internal/domain"
 )
 
 func (s *Service) addPostInUserFeedCache(userID, postID, text, authorID string) {
@@ -74,6 +75,14 @@ func (s *Service) createPost(c echo.Context) error {
 	}
 
 	s.addPostInFriendsFeedCache(userID, id, req.Text)
+	err := s.liveFeedRepo.SendPost(c.Request().Context(), domain.Post{
+		ID:     id,
+		UserID: userID,
+		Text:   req.Text,
+	})
+	if err != nil {
+		return err
+	}
 
 	return c.JSON(http.StatusOK, CreatePostResp{ID: id})
 }

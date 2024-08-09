@@ -3,14 +3,17 @@ package main
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/redis/go-redis/v9"
-	"github.com/tarantool/go-tarantool/v2"
 	"otus-homework/internal/migrate"
+	"otus-homework/internal/rabbitrepo"
 	"otus-homework/internal/redisrepo"
 	"otus-homework/internal/repo"
 	"otus-homework/internal/service"
 	"otus-homework/internal/tarantoolrepo"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/redis/go-redis/v9"
+	"github.com/tarantool/go-tarantool/v2"
 )
 
 const (
@@ -20,6 +23,8 @@ const (
 	dbSlaveString = "host=db user=postgres password=postgres dbname=postgres sslmode=disable"
 
 	redisAddress = "redis:6379"
+
+	rabbitMQString = "amqp://guest:guest@rabbitmq:5672/"
 
 	repoMigrationsDir = "migrations/repo"
 
@@ -59,6 +64,17 @@ func main() {
 	})
 	redisRepo := redisrepo.New(redisClient)
 
-	s := service.New(mainRepo, tarantoolRepo, redisRepo, port, jwtSecret, tokenTTLHours, feedMaxLen)
+	conn, err := amqp.Dial(rabbitMQString)
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+
+	rabbitRepo, err := rabbitrepo.New(conn)
+	if err != nil {
+		panic(err)
+	}
+
+	s := service.New(mainRepo, tarantoolRepo, redisRepo, rabbitRepo, port, jwtSecret, tokenTTLHours, feedMaxLen)
 	s.StartService()
 }
