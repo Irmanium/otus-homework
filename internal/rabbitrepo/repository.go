@@ -124,11 +124,13 @@ func (r *Repo) GetFeed(friendIDs []string, cancel <-chan struct{}) (<-chan []byt
 			close(feed)
 		}()
 
-		select {
-		case <-cancel:
-			return
-		case msg := <-msgs:
-			feed <- msg.Body
+		for {
+			select {
+			case <-cancel:
+				return
+			case msg := <-msgs:
+				feed <- msg.Body
+			}
 		}
 	}()
 
